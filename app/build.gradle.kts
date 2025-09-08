@@ -64,6 +64,18 @@ dependencies {
     implementation("com.google.firebase:firebase-auth-ktx:22.3.1")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
 
+    // Firebase (você já tem BoM e Auth)
+    implementation("com.google.firebase:firebase-storage-ktx:21.0.2")
+
+    // Coroutines para Tasks do Firebase (await())
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
+
+    // Coil para mostrar foto do perfil
+    implementation("io.coil-kt:coil-compose:2.7.0")
+
+    // Lifecycle Compose (para collectAsStateWithLifecycle)
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
+
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
@@ -78,6 +90,7 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")

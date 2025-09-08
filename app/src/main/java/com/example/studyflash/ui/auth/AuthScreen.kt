@@ -15,11 +15,12 @@ fun AuthScreen(
     onAuthenticated: () -> Unit,
     vm: AuthViewModel = hiltViewModel()
 ) {
+    val user by vm.user.collectAsStateWithLifecycle()
+    var mode by remember { mutableStateOf(AuthMode.Login) }
+
     var email by remember { mutableStateOf("") }
     var pass  by remember { mutableStateOf("") }
-
-    val canGo = email.isNotBlank() && pass.length >= 6
-    val user by vm.user.collectAsStateWithLifecycle()
+    var confirm by remember { mutableStateOf("") }
 
     LaunchedEffect(user) {
         if (user != null) onAuthenticated()
@@ -34,32 +35,84 @@ fun AuthScreen(
                 .fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("Autenticação", style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = if (mode == AuthMode.Login) "Entrar" else "Cadastrar",
+                style = MaterialTheme.typography.titleLarge
+            )
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = mode == AuthMode.Login,
+                    onClick = { mode = AuthMode.Login },
+                    label = { Text("Login") }
+                )
+                FilterChip(
+                    selected = mode == AuthMode.SignUp,
+                    onClick = { mode = AuthMode.SignUp },
+                    label = { Text("Cadastro") }
+                )
+            }
 
             OutlinedTextField(
-                value = email, onValueChange = { email = it },
-                label = { Text("E-mail") }, modifier = Modifier.fillMaxWidth()
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("E-mail") },
+                modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = pass, onValueChange = { pass = it },
-                label = { Text("Senha (mín. 6)")},
+                value = pass,
+                onValueChange = { pass = it },
+                label = { Text("Senha") },
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(
-                    onClick = { vm.signIn(email.trim(), pass, onAuthenticated) },
-                    enabled = canGo, modifier = Modifier.weight(1f)
-                ) { Text("Entrar") }
-
-                OutlinedButton(
-                    onClick = { vm.signUp(email.trim(), pass, onAuthenticated) },
-                    enabled = canGo, modifier = Modifier.weight(1f)
-                ) { Text("Cadastrar") }
+            if (mode == AuthMode.SignUp) {
+                OutlinedTextField(
+                    value = confirm,
+                    onValueChange = { confirm = it },
+                    label = { Text("Confirmar senha") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
-            vm.errorMsg?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            vm.errorMsg?.let {
+                Text(it, color = MaterialTheme.colorScheme.error)
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            if (mode == AuthMode.Login) {
+                Button(
+                    onClick = { vm.signIn(email.trim(), pass) { onAuthenticated() } },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Entrar") }
+
+                TextButton(
+                    onClick = { mode = AuthMode.SignUp },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Quero me cadastrar") }
+
+            } else {
+                Button(
+                    onClick = {
+                        when {
+                            pass != confirm -> vm.setError("As senhas não coincidem")
+                            pass.length < 6 -> vm.setError("Senha deve ter pelo menos 6 caracteres")
+                            else -> vm.signUp(email.trim(), pass) { onAuthenticated() }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Cadastrar") }
+
+                TextButton(
+                    onClick = { mode = AuthMode.Login },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Já tenho conta") }
+            }
         }
     }
 }
+
+private enum class AuthMode { Login, SignUp }

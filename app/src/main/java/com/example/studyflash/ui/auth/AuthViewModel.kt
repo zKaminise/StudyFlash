@@ -1,5 +1,8 @@
 package com.example.studyflash.ui.auth
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.studyflash.data.auth.AuthRepository
@@ -17,26 +20,40 @@ class AuthViewModel @Inject constructor(
 ) : ViewModel() {
 
     val user: StateFlow<FirebaseUser?> =
-        repo.authState().stateIn(viewModelScope, SharingStarted.Eagerly, repo.currentUser)
+        repo.userFlow.stateIn(viewModelScope, SharingStarted.Eagerly, repo.currentUser())
 
-    var errorMsg: String? = null
+    var errorMsg: String? by mutableStateOf(null)
         private set
 
-    fun signIn(email: String, password: String, onSuccess: () -> Unit) {
+    fun setError(msg: String) { errorMsg = msg }
+    fun clearError() { errorMsg = null }
+
+    fun signIn(email: String, pass: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
-            runCatching { repo.signIn(email, password) }
-                .onSuccess { onSuccess() }
-                .onFailure { errorMsg = it.message }
+            try {
+                clearError()
+                repo.signIn(email, pass)
+                onSuccess()
+            } catch (e: Exception) {
+                setError(e.localizedMessage ?: "Falha ao entrar")
+            }
         }
     }
 
-    fun signUp(email: String, password: String, onSuccess: () -> Unit) {
+    fun signUp(email: String, pass: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
-            runCatching { repo.signUp(email, password) }
-                .onSuccess { onSuccess() }
-                .onFailure { errorMsg = it.message }
+            try {
+                clearError()
+                repo.signUp(email, pass)
+                onSuccess()
+            } catch (e: Exception) {
+                setError(e.localizedMessage ?: "Falha ao cadastrar")
+            }
         }
     }
 
-    fun signOut() { repo.signOut() }
+    fun signOut(onAfter: () -> Unit) {
+        repo.signOut()
+        onAfter()
+    }
 }
