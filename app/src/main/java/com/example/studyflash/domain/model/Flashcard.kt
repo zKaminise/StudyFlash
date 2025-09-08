@@ -1,9 +1,11 @@
-package com.example.studyflash.domain.model
+package com.example.server.model
 
-
-sealed class FlashcardType(val key: String) {
-    data object FrontBack : FlashcardType("FRONT_BACK")
-    data object Cloze : FlashcardType("CLOZE")
-    data object Typing : FlashcardType("TYPING")
-    data object Mcq : FlashcardType("MCQ")
-}
+data class Flashcard(
+    val id: Long,
+    val type: String,
+    val frontText: String?,
+    val backText: String?,
+    val wrong1: String?,
+    val wrong2: String?,
+    val wrong3: String?
+)

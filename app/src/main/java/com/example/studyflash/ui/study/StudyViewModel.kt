@@ -33,7 +33,7 @@ class StudyViewModel @Inject constructor(
 
     fun loadNext() {
         viewModelScope.launch {
-            val card = repo.getNextDue(now)
+            val card = repo.getNextDue() // <- sem argumentos
             _current.value = card
             _selectedIndex.value = null
             _isCorrect.value = null
@@ -56,7 +56,11 @@ class StudyViewModel @Inject constructor(
         val correct = _isCorrect.value == true
         val elapsed = (now - startTimeMs).coerceAtLeast(0L)
         viewModelScope.launch {
-            repo.recordReview(card, grade = if (correct) StudyGrade.Good else StudyGrade.Again, timeToAnswerMs = elapsed)
+            repo.recordReview(
+                card = card,
+                grade = if (correct) StudyGrade.Good else StudyGrade.Again,
+                timeToAnswerMs = elapsed
+            )
             onAfter()
             loadNext()
         }

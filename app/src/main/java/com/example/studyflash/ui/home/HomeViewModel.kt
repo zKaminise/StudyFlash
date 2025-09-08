@@ -4,13 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.studyflash.data.local.FlashcardEntity
 import com.example.studyflash.data.repository.FlashcardRepository
+import com.example.studyflash.data.sync.SyncManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import javax.inject.Inject
-import com.example.studyflash.data.sync.SyncManager
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -18,9 +18,9 @@ class HomeViewModel @Inject constructor(
     private val sync: SyncManager
 ) : ViewModel() {
 
-    val items: StateFlow<List<FlashcardEntity>> =
-        repo.observeLocal()
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val items = repo.observeLocal()
+        .map { list -> list.sortedByDescending { it.updatedAt } }
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     fun add(type: String, front: String?, back: String?) {
         viewModelScope.launch { repo.add(type, front, back) }

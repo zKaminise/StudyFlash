@@ -1,19 +1,15 @@
 plugins {
     application
-
-    // sem versão aqui (evita conflito com o que já está no classpath do projeto Android)
     kotlin("jvm")
-
-    // precisa de versão aqui
     kotlin("plugin.serialization") version "1.9.24"
-
-    // versão do plugin do Ktor
     id("io.ktor.plugin") version "2.3.12"
 }
 
-kotlin {
-    // use JDK 17
-    jvmToolchain(17)
+kotlin { jvmToolchain(17) }
+
+repositories {
+    google()
+    mavenCentral()
 }
 
 application {
@@ -22,14 +18,13 @@ application {
 }
 
 dependencies {
-    implementation("io.ktor:ktor-server-netty:2.3.12")
-    implementation("io.ktor:ktor-server-core:2.3.12")
-    implementation("io.ktor:ktor-server-content-negotiation:2.3.12")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.12")
-    implementation("io.ktor:ktor-server-cors:2.3.12")
-    implementation("io.ktor:ktor-server-call-logging:2.3.12")
-    implementation("io.ktor:ktor-server-status-pages:2.3.12")
+    val ktor = "2.3.12"
+    implementation("io.ktor:ktor-server-core:$ktor")
+    implementation("io.ktor:ktor-server-netty:$ktor")
+    implementation("io.ktor:ktor-server-content-negotiation:$ktor")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor")
+    implementation("io.ktor:ktor-server-cors:$ktor")
+    implementation("io.ktor:ktor-server-call-logging:$ktor")
     implementation("ch.qos.logback:logback-classic:1.5.6")
-
     testImplementation(kotlin("test"))
 }

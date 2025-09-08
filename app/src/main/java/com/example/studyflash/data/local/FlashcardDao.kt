@@ -12,6 +12,9 @@ interface FlashcardDao {
     @Query("SELECT * FROM flashcards ORDER BY updatedAt DESC")
     fun observeAll(): Flow<List<FlashcardEntity>>
 
+    @Query("SELECT * FROM flashcards")
+    suspend fun listAll(): List<FlashcardEntity>
+
     @Query("SELECT * FROM flashcards WHERE id = :id")
     suspend fun getById(id: Long): FlashcardEntity?
 
@@ -21,11 +24,11 @@ interface FlashcardDao {
     @Delete
     suspend fun delete(entity: FlashcardEntity)
 
-    // Somente cartões "vencidos" (devidos)
+    // Cartão “devido” (vencido) para estudo
     @Query("SELECT * FROM flashcards WHERE dueAt <= :now ORDER BY dueAt ASC LIMIT 1")
     suspend fun getNextDue(now: Long): FlashcardEntity?
 
-    // Distratores: outras respostas (backs) aleatórias
+    // Distratores para MCQ
     @Query("""
         SELECT backText FROM flashcards
         WHERE id != :id AND backText IS NOT NULL AND TRIM(backText) != ''
@@ -33,12 +36,14 @@ interface FlashcardDao {
     """)
     suspend fun getRandomBacks(id: Long, n: Int): List<String>
 
-    // (Opcional) contagens
     @Query("SELECT COUNT(*) FROM flashcards")
     suspend fun countAll(): Int
 
     @Query("SELECT COUNT(*) FROM flashcards WHERE dueAt <= :now")
     suspend fun countDue(now: Long): Int
+
+    @Query("DELETE FROM flashcards")
+    suspend fun clearAll()
 
     @Query("""
         UPDATE flashcards
@@ -57,11 +62,4 @@ interface FlashcardDao {
         dueAt: Long,
         updatedAt: Long = System.currentTimeMillis()
     )
-
-    @Query("DELETE FROM flashcards")
-    suspend fun clearAll()
-
-    @Query("SELECT * FROM flashcards")
-    suspend fun listAll(): List<FlashcardEntity>
-
 }

@@ -13,7 +13,8 @@ pluginManagement {
 }
 
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    // 👇 troque para PREFER_SETTINGS
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
         google()
         mavenCentral()
@@ -23,4 +24,3 @@ dependencyResolutionManagement {
 rootProject.name = "studyflash"
 include(":app")
 include(":server-ktor")
-

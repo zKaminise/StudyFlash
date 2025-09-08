@@ -12,9 +12,24 @@ class CreateFlashcardViewModel @Inject constructor(
     private val repo: FlashcardRepository
 ) : ViewModel() {
 
-    fun save(type: String, front: String?, back: String?) {
+    fun saveMcq(
+        question: String,
+        correct: String,
+        wrong1: String,
+        wrong2: String,
+        wrong3: String,
+        onDone: () -> Unit
+    ) {
         viewModelScope.launch {
-            repo.add(type, front, back)
+            repo.add(
+                type = "mcq",
+                front = question,
+                back = correct,
+                wrong1 = wrong1,
+                wrong2 = wrong2,
+                wrong3 = wrong3
+            )
+            onDone()
         }
     }
 }
