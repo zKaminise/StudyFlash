@@ -3,6 +3,7 @@ package com.example.studyflash.di
 import android.content.Context
 import androidx.room.Room
 import com.example.studyflash.data.local.AppDatabase
+import com.example.studyflash.data.local.AttemptHistoryDao
 import com.example.studyflash.data.local.FlashcardDao
 import com.example.studyflash.data.repository.FlashcardRepository
 import dagger.Module
@@ -25,9 +26,15 @@ object AppModule {
             .build()
 
     @Provides @Singleton
-    fun provideDao(db: AppDatabase): FlashcardDao = db.flashcardDao()
+    fun provideFlashcardDao(db: AppDatabase): FlashcardDao = db.flashcardDao()
 
     @Provides @Singleton
-    fun provideRepository(dao: FlashcardDao): FlashcardRepository =
-        FlashcardRepository(dao)
+    fun provideAttemptDao(db: AppDatabase): AttemptHistoryDao = db.attemptHistoryDao()
+
+    @Provides @Singleton
+    fun provideRepository(
+        flashcardDao: FlashcardDao,
+        attemptDao: AttemptHistoryDao
+    ): FlashcardRepository =
+        FlashcardRepository(flashcardDao, attemptDao)
 }

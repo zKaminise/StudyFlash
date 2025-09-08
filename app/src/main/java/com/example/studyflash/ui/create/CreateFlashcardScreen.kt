@@ -60,7 +60,6 @@ fun CreateFlashcardScreen(
             Spacer(Modifier.height(20.dp))
             Button(onClick = {
                 if (type.isBlank() || front.isBlank()) {
-                    // se quiser, podemos chamar host.showSnackbar("Preencha tipo e frente")
                     return@Button
                 }
                 vm.save(type, front, back.ifBlank { null })
