@@ -6,4 +6,5 @@ plugins {
 
     // Hilt (plugin declarada na raiz para poder aplicar no :app)
     id("com.google.dagger.hilt.android") version "2.51.1" apply false
+
 }

@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -45,6 +46,22 @@ fun HomeScreen(
                 Text("Ver Cards")
             }
             // Espaço para métricas e atalhos futuros
+            // --- Sync ---
+            val host = remember { SnackbarHostState() }
+            SnackbarHost(hostState = host)
+
+            OutlinedButton(
+                onClick = { vm.syncPull { n ->
+                    // feedback simples
+                    // você pode trocar por Dialog/Toast
+                } },
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Sincronizar (Puxar do Servidor)") }
+
+            OutlinedButton(
+                onClick = { vm.syncPush { n -> } },
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Enviar Tudo (Subir para o Servidor)") }
         }
     }
 }

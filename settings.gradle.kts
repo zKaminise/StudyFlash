@@ -22,3 +22,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "studyflash"
 include(":app")
+include(":server-ktor")
+

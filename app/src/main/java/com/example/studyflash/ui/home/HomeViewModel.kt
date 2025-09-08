@@ -10,10 +10,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.example.studyflash.data.sync.SyncManager
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val repo: FlashcardRepository
+    private val repo: FlashcardRepository,
+    private val sync: SyncManager
 ) : ViewModel() {
 
     val items: StateFlow<List<FlashcardEntity>> =
@@ -26,5 +28,19 @@ class HomeViewModel @Inject constructor(
 
     fun delete(card: FlashcardEntity) {
         viewModelScope.launch { repo.delete(card) }
+    }
+
+    fun syncPull(onDone: (Int) -> Unit = {}) {
+        viewModelScope.launch {
+            val n = sync.pullAll()
+            onDone(n)
+        }
+    }
+
+    fun syncPush(onDone: (Int) -> Unit = {}) {
+        viewModelScope.launch {
+            val n = sync.pushAll()
+            onDone(n)
+        }
     }
 }

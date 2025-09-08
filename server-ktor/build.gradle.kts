@@ -1,32 +1,35 @@
 plugins {
     application
-    id("org.jetbrains.kotlin.jvm") version (rootProject.ext["kotlinVersion"] as String)
-    id("io.ktor.plugin") version (rootProject.ext["ktorVersion"] as String)
+
+    // sem versão aqui (evita conflito com o que já está no classpath do projeto Android)
+    kotlin("jvm")
+
+    // precisa de versão aqui
+    kotlin("plugin.serialization") version "1.9.24"
+
+    // versão do plugin do Ktor
+    id("io.ktor.plugin") version "2.3.12"
 }
 
+kotlin {
+    // use JDK 17
+    jvmToolchain(17)
+}
 
 application {
     mainClass.set("com.example.server.ApplicationKt")
     applicationDefaultJvmArgs = listOf("-Dio.ktor.development=true")
 }
 
-
-repositories { mavenCentral() }
-
-
 dependencies {
-    val ktor = rootProject.ext["ktorVersion"] as String
-    implementation("io.ktor:ktor-server-netty:$ktor")
-    implementation("io.ktor:ktor-server-core:$ktor")
-    implementation("io.ktor:ktor-server-content-negotiation:$ktor")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor")
-    implementation("io.ktor:ktor-server-cors:$ktor")
-    implementation("io.ktor:ktor-server-call-logging:$ktor")
-    testImplementation("io.ktor:ktor-server-tests-jvm:$ktor")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:${rootProject.ext["kotlinVersion"]}")
-}
+    implementation("io.ktor:ktor-server-netty:2.3.12")
+    implementation("io.ktor:ktor-server-core:2.3.12")
+    implementation("io.ktor:ktor-server-content-negotiation:2.3.12")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.12")
+    implementation("io.ktor:ktor-server-cors:2.3.12")
+    implementation("io.ktor:ktor-server-call-logging:2.3.12")
+    implementation("io.ktor:ktor-server-status-pages:2.3.12")
+    implementation("ch.qos.logback:logback-classic:1.5.6")
 
-
-kotlin {
-    jvmToolchain(17)
+    testImplementation(kotlin("test"))
 }

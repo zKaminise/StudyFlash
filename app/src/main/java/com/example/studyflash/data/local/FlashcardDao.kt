@@ -57,4 +57,11 @@ interface FlashcardDao {
         dueAt: Long,
         updatedAt: Long = System.currentTimeMillis()
     )
+
+    @Query("DELETE FROM flashcards")
+    suspend fun clearAll()
+
+    @Query("SELECT * FROM flashcards")
+    suspend fun listAll(): List<FlashcardEntity>
+
 }

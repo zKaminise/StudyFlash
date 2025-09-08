@@ -37,4 +37,11 @@ object AppModule {
         attemptDao: AttemptHistoryDao
     ): FlashcardRepository =
         FlashcardRepository(flashcardDao, attemptDao)
+
+    @Provides @Singleton
+    fun provideSyncManager(
+        api: com.example.studyflash.data.remote.KtorApi,
+        dao: com.example.studyflash.data.local.FlashcardDao
+    ): com.example.studyflash.data.sync.SyncManager = com.example.studyflash.data.sync.SyncManager(api, dao)
+
 }
