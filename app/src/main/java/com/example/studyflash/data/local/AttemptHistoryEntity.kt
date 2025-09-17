@@ -9,5 +9,6 @@ data class AttemptHistoryEntity(
     val cardId: Long,
     val correct: Boolean,                    // true = acerto, false = erro
     val answeredAt: Long = System.currentTimeMillis(),
-    val locationId: String? = null           // opcional: último local favoritado
+    val locationId: String? = null,          // opcional: último local favoritado
+    val timeToAnswerMs: Long? = null
 )

@@ -13,6 +13,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 fun AuthScreen(
     padding: PaddingValues,
     onAuthenticated: () -> Unit,
+    onRecoverPassword: () -> Unit, // ⬅️ NOVO
     vm: AuthViewModel = hiltViewModel()
 ) {
     val user by vm.user.collectAsStateWithLifecycle()
@@ -88,6 +89,12 @@ fun AuthScreen(
                     onClick = { vm.signIn(email.trim(), pass) { onAuthenticated() } },
                     modifier = Modifier.fillMaxWidth()
                 ) { Text("Entrar") }
+
+                // ⬇️ NOVO link
+                TextButton(
+                    onClick = onRecoverPassword,
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Esqueci minha senha") }
 
                 TextButton(
                     onClick = { mode = AuthMode.SignUp },

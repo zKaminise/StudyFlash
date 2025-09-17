@@ -56,4 +56,19 @@ class AuthViewModel @Inject constructor(
         repo.signOut()
         onAfter()
     }
+
+    // ⬇️ NOVO
+    fun sendPasswordReset(email: String, onDone: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            try {
+                clearError()
+                repo.sendPasswordReset(email)
+                onDone(true, null)
+            } catch (e: Exception) {
+                val msg = e.localizedMessage ?: "Falha ao enviar e-mail de recuperação"
+                setError(msg)
+                onDone(false, msg)
+            }
+        }
+    }
 }

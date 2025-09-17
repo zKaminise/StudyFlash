@@ -24,9 +24,28 @@ interface FlashcardDao {
     @Delete
     suspend fun delete(entity: FlashcardEntity)
 
-    // Cartão “devido” (vencido) para estudo
+    // Cartão "devido" (vencido) para estudo
     @Query("SELECT * FROM flashcards WHERE dueAt <= :now ORDER BY dueAt ASC LIMIT 1")
     suspend fun getNextDue(now: Long): FlashcardEntity?
+
+    // Evita repetição por localização (exclui cartões revistos recentemente no mesmo local)
+    @Query("""
+        SELECT * FROM flashcards
+        WHERE dueAt <= :now
+          AND NOT (
+                :locationId IS NOT NULL
+            AND lastLocationId = :locationId
+            AND lastReviewedAt IS NOT NULL
+            AND (:now - lastReviewedAt) < :avoidMs
+          )
+        ORDER BY dueAt ASC
+        LIMIT 1
+    """)
+    suspend fun getNextDueAvoidingLocation(
+        now: Long,
+        locationId: String?,
+        avoidMs: Long
+    ): FlashcardEntity?
 
     // Distratores para MCQ
     @Query("""
@@ -47,11 +66,13 @@ interface FlashcardDao {
 
     @Query("""
         UPDATE flashcards
-        SET easeFactor = :ease,
-            intervalDays = :intervalDays,
-            repetitions = :reps,
-            dueAt = :dueAt,
-            updatedAt = :updatedAt
+        SET easeFactor    = :ease,
+            intervalDays  = :intervalDays,
+            repetitions   = :reps,
+            dueAt         = :dueAt,
+            lastLocationId = :lastLocationId,
+            lastReviewedAt = :lastReviewedAt,
+            updatedAt     = :updatedAt
         WHERE id = :id
     """)
     suspend fun updateSpaced(
@@ -60,6 +81,8 @@ interface FlashcardDao {
         intervalDays: Int,
         reps: Int,
         dueAt: Long,
+        lastLocationId: String?,
+        lastReviewedAt: Long?,
         updatedAt: Long = System.currentTimeMillis()
     )
 }

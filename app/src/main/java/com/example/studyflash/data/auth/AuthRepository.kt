@@ -58,4 +58,9 @@ class AuthRepository @Inject constructor(
         user.updateProfile(req).await()
         return url
     }
+
+    // ⬇️ NOVO: enviar e-mail de recuperação
+    suspend fun sendPasswordReset(email: String) {
+        auth.sendPasswordResetEmail(email).await()
+    }
 }

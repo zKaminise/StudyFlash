@@ -32,4 +32,27 @@ class CreateFlashcardViewModel @Inject constructor(
             onDone()
         }
     }
+
+    fun saveFrontBack(front: String, back: String, onDone: () -> Unit) {
+        viewModelScope.launch {
+            repo.add(type = "front_back", front = front, back = back)
+            onDone()
+        }
+    }
+
+    fun saveFreeText(question: String, answers: List<String>, onDone: () -> Unit) {
+        viewModelScope.launch {
+            val back = answers.joinToString(";")
+            repo.add(type = "free_text", front = question, back = back)
+            onDone()
+        }
+    }
+
+    fun saveCloze(text: String, answers: List<String>, onDone: () -> Unit) {
+        viewModelScope.launch {
+            val back = answers.joinToString(";")
+            repo.add(type = "cloze", front = text, back = back)
+            onDone()
+        }
+    }
 }

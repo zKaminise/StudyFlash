@@ -9,7 +9,8 @@ data class CreateFlashcardRequest(
     val backText: String? = null,
     val wrong1: String? = null,
     val wrong2: String? = null,
-    val wrong3: String? = null
+    val wrong3: String? = null,
+    val payloadJson: String? = null // ⬅️ novo
 )
 
 @Serializable
@@ -20,5 +21,6 @@ data class FlashcardDto(
     val backText: String? = null,
     val wrong1: String? = null,
     val wrong2: String? = null,
-    val wrong3: String? = null
+    val wrong3: String? = null,
+    val payloadJson: String? = null // ⬅️ novo
 )

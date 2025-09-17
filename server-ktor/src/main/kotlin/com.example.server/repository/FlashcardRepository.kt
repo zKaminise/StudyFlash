@@ -21,7 +21,8 @@ class FlashcardRepository {
             backText = req.backText,
             wrong1 = req.wrong1,
             wrong2 = req.wrong2,
-            wrong3 = req.wrong3
+            wrong3 = req.wrong3,
+            payloadJson = req.payloadJson
         )
         db[id] = dto
         return dto
@@ -35,7 +36,8 @@ class FlashcardRepository {
             backText = req.backText,
             wrong1 = req.wrong1,
             wrong2 = req.wrong2,
-            wrong3 = req.wrong3
+            wrong3 = req.wrong3,
+            payloadJson = req.payloadJson
         )
         db[id] = dto
         seq.accumulateAndGet(id + 1) { cur, next -> maxOf(cur, next) }

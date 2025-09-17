@@ -16,10 +16,6 @@ class FlashcardRepository @Inject constructor(
 
     fun observeLocal(): Flow<List<FlashcardEntity>> = dao.observeAll()
 
-    /**
-     * Cria um card local.
-     * Para MCQ (múltipla escolha), preencha wrong1/2/3 com as alternativas erradas.
-     */
     suspend fun add(
         type: String,
         front: String?,
@@ -29,19 +25,24 @@ class FlashcardRepository @Inject constructor(
         wrong3: String? = null
     ) {
         val now = System.currentTimeMillis()
-        dao.upsert(
-            FlashcardEntity(
-                type = type,
-                frontText = front,
-                backText = back,
-                wrong1 = wrong1,
-                wrong2 = wrong2,
-                wrong3 = wrong3,
-                createdAt = now,
-                updatedAt = now,
-                dueAt = now // disponível imediatamente para estudo
-            )
+        val entity = FlashcardEntity(
+            /* id             = */ 0L,
+            /* type           = */ type,
+            /* frontText      = */ front,
+            /* backText       = */ back,
+            /* wrong1         = */ wrong1,
+            /* wrong2         = */ wrong2,
+            /* wrong3         = */ wrong3,
+            /* createdAt      = */ now,
+            /* updatedAt      = */ now,
+            /* dueAt          = */ now,
+            /* easeFactor     = */ 2.5,
+            /* intervalDays   = */ 0,
+            /* repetitions    = */ 0,
+            /* lastLocationId = */ null,
+            /* lastReviewedAt = */ null
         )
+        dao.upsert(entity)
     }
 
     suspend fun delete(card: FlashcardEntity) {
@@ -52,16 +53,12 @@ class FlashcardRepository @Inject constructor(
     suspend fun getNextDue(): FlashcardEntity? =
         dao.getNextDue(System.currentTimeMillis())
 
-    /**
-     * Monta opções de múltipla escolha para o card.
-     * Preferência:
-     * 1) Se o card tiver wrong1/2/3 preenchidos, usa [backText, wrong1, wrong2, wrong3].
-     * 2) Caso contrário, busca distratores no banco para completar.
-     */
+    suspend fun getNextDue(currentLocationId: String?): FlashcardEntity? =
+        getNextDue()
+
     suspend fun buildOptionsFor(card: FlashcardEntity, total: Int = 4): List<String> {
         val correct = card.backText?.takeIf { it.isNotBlank() } ?: "Sem resposta"
 
-        // Se o card tiver alternativas definidas, usa-as
         val predefinedWrong = listOfNotNull(
             card.wrong1?.takeIf { it.isNotBlank() },
             card.wrong2?.takeIf { it.isNotBlank() },
@@ -71,13 +68,11 @@ class FlashcardRepository @Inject constructor(
         val base = if (predefinedWrong.isNotEmpty()) {
             (listOf(correct) + predefinedWrong).distinct()
         } else {
-            // Sem alternativas definidas => completa com distratores do banco
             val needDistractors = max(0, total - 1)
             val distractors = dao.getRandomBacks(card.id, needDistractors)
             (listOf(correct) + distractors).distinct()
         }
 
-        // Garante que teremos exatamente 'total' opções (com placeholders se faltar)
         val extras = generateSequence(1) { it + 1 }
             .map { "Opção $it" }
             .filter { it !in base }
@@ -87,11 +82,6 @@ class FlashcardRepository @Inject constructor(
         return (base + extras).take(total).shuffled()
     }
 
-    /**
-     * Registra resposta e agenda próxima revisão:
-     * - errado => 2 minutos
-     * - certo  => 24 horas
-     */
     suspend fun recordAnswer(
         card: FlashcardEntity,
         correct: Boolean,
@@ -102,23 +92,26 @@ class FlashcardRepository @Inject constructor(
             if (correct) {
                 val reps = card.repetitions + 1
                 val ease = card.easeFactor
-                val intervalDays = 1                 // 24 horas
+                val intervalDays = 1
                 val due = now + 24L * 60 * 60 * 1000
                 Quad(intervalDays, ease, reps, due)
             } else {
                 val reps = 0
                 val ease = card.easeFactor
                 val intervalDays = 0
-                val due = now + 2L * 60 * 1000       // 2 minutos
+                val due = now + 2L * 60 * 1000
                 Quad(intervalDays, ease, reps, due)
             }
 
+        // ✅ AGORA PASSANDO TODOS OS PARÂMETROS QUE O DAO EXIGE
         dao.updateSpaced(
             id = card.id,
             ease = ease,
             intervalDays = intervalDays,
             reps = reps,
             dueAt = nextDueAt,
+            lastLocationId = currentLocationId, // <— novo
+            lastReviewedAt = now,               // <— novo
             updatedAt = now
         )
 
@@ -132,9 +125,6 @@ class FlashcardRepository @Inject constructor(
         )
     }
 
-    /**
-     * API usada pelo StudyViewModel: converte grade para correto/errado (2 min/24 h).
-     */
     suspend fun recordReview(
         card: FlashcardEntity,
         grade: StudyGrade,
@@ -146,8 +136,10 @@ class FlashcardRepository @Inject constructor(
             StudyGrade.Hard, StudyGrade.Good, StudyGrade.Easy -> true
         }
         recordAnswer(card, correct, currentLocationId)
-        // timeToAnswerMs disponível para evoluir o algoritmo no futuro
     }
+
+    suspend fun countAll(): Int = dao.countAll()
+    suspend fun countDue(nowMs: Long = System.currentTimeMillis()): Int = dao.countDue(nowMs)
 
     private data class Quad(
         val intervalDays: Int,

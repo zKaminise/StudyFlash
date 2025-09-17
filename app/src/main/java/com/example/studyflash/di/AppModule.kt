@@ -3,11 +3,12 @@ package com.example.studyflash.di
 import android.content.Context
 import androidx.room.Room
 import com.example.studyflash.data.local.AppDatabase
-import com.example.studyflash.data.local.AttemptHistoryDao
-import com.example.studyflash.data.local.FlashcardDao
 import com.example.studyflash.data.remote.KtorApi
 import com.example.studyflash.data.repository.FlashcardRepository
+import com.example.studyflash.data.repository.LocationsRepository
 import com.example.studyflash.data.sync.SyncManager
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.storage.FirebaseStorage
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -15,6 +16,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -22,44 +24,26 @@ import retrofit2.converter.gson.GsonConverterFactory
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
-    private const val DB_NAME = "studyflash.db"
-
-    // 👇 AQUI você define a URL base do servidor:
-    // Emulador Android -> host da máquina é 10.0.2.2
-    private const val BASE_URL = "http://10.0.2.2:8080/"
-
-    // Se for testar em CELULAR FÍSICO na mesma rede do PC,
-    // troque por algo como: "http://192.168.0.10:8080/"
-    // private const val BASE_URL = "http://SEU_IP_LOCAL:8080/"
-
     @Provides @Singleton
-    fun provideDb(@ApplicationContext ctx: Context): AppDatabase =
-        Room.databaseBuilder(ctx, AppDatabase::class.java, DB_NAME)
+    fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
+        Room.databaseBuilder(context, AppDatabase::class.java, "studyflash.db")
             .fallbackToDestructiveMigration()
             .build()
 
     @Provides @Singleton
-    fun provideFlashcardDao(db: AppDatabase): FlashcardDao = db.flashcardDao()
-
-    @Provides @Singleton
-    fun provideAttemptHistoryDao(db: AppDatabase): AttemptHistoryDao = db.attemptHistoryDao()
-
-    @Provides @Singleton
-    fun provideOkHttp(): OkHttpClient {
-        val logging = okhttp3.logging.HttpLoggingInterceptor().apply {
-            level = okhttp3.logging.HttpLoggingInterceptor.Level.BODY
-        }
-        return OkHttpClient.Builder()
-            .addInterceptor(logging)
+    fun provideOkHttpClient(): OkHttpClient =
+        OkHttpClient.Builder()
+            .addInterceptor(HttpLoggingInterceptor().apply {
+                level = HttpLoggingInterceptor.Level.BODY
+            })
             .build()
-    }
 
     @Provides @Singleton
     fun provideRetrofit(client: OkHttpClient): Retrofit =
         Retrofit.Builder()
-            .baseUrl(BASE_URL) // 👈 usando a BASE_URL aqui
-            .client(client)
+            .baseUrl("http://10.0.2.2:8080/")
             .addConverterFactory(GsonConverterFactory.create())
+            .client(client)
             .build()
 
     @Provides @Singleton
@@ -67,14 +51,15 @@ object AppModule {
         retrofit.create(KtorApi::class.java)
 
     @Provides @Singleton
-    fun provideRepository(
-        dao: FlashcardDao,
-        attemptDao: AttemptHistoryDao
-    ): FlashcardRepository = FlashcardRepository(dao, attemptDao)
+    fun provideFlashcardRepository(db: AppDatabase): FlashcardRepository =
+        FlashcardRepository(db.flashcardDao(), db.attemptHistoryDao())
 
     @Provides @Singleton
-    fun provideSyncManager(
-        api: KtorApi,
-        dao: FlashcardDao
-    ): SyncManager = SyncManager(api, dao)
+    fun provideLocationsRepository(db: AppDatabase): LocationsRepository =
+        LocationsRepository(db.favoriteLocationDao())
+
+    @Provides @Singleton
+    fun provideSyncManager(api: KtorApi, db: AppDatabase): SyncManager =
+        SyncManager(api, db)
 }
+

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.studyflash.data.local.FlashcardEntity
 import com.example.studyflash.data.repository.FlashcardRepository
+import com.example.studyflash.data.repository.LocationsRepository
 import com.example.studyflash.domain.spaced.StudyGrade
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -13,7 +14,8 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class StudyViewModel @Inject constructor(
-    private val repo: FlashcardRepository
+    private val repo: FlashcardRepository,
+    private val locationsRepo: LocationsRepository
 ) : ViewModel() {
 
     private val _current = MutableStateFlow<FlashcardEntity?>(null)
@@ -28,16 +30,20 @@ class StudyViewModel @Inject constructor(
     private val _isCorrect = MutableStateFlow<Boolean?>(null)
     val isCorrect = _isCorrect.asStateFlow()
 
+    val manualResult = MutableStateFlow<Boolean?>(null)
+
     private var startTimeMs: Long = 0L
     private val now: Long get() = System.currentTimeMillis()
 
     fun loadNext() {
         viewModelScope.launch {
-            val card = repo.getNextDue() // <- sem argumentos
+            val currentLoc = locationsRepo.getCurrentLocationId()
+            val card = repo.getNextDue(currentLoc)
             _current.value = card
             _selectedIndex.value = null
             _isCorrect.value = null
-            _options.value = if (card != null) repo.buildOptionsFor(card) else emptyList()
+            manualResult.value = null
+            _options.value = if (card != null && card.type == "mcq") repo.buildOptionsFor(card) else emptyList()
             startTimeMs = now
         }
     }
@@ -53,13 +59,32 @@ class StudyViewModel @Inject constructor(
 
     fun commitAnswer(onAfter: () -> Unit) {
         val card = _current.value ?: return
-        val correct = _isCorrect.value == true
         val elapsed = (now - startTimeMs).coerceAtLeast(0L)
         viewModelScope.launch {
+            val currentLoc = locationsRepo.getCurrentLocationId()
+            val correct = (_isCorrect.value == true)
             repo.recordReview(
                 card = card,
                 grade = if (correct) StudyGrade.Good else StudyGrade.Again,
-                timeToAnswerMs = elapsed
+                timeToAnswerMs = elapsed,
+                currentLocationId = currentLoc
+            )
+            onAfter()
+            loadNext()
+        }
+    }
+
+    // ⬇️ Para tipos manuais: commit com nota explícita
+    fun commitGrade(grade: StudyGrade, onAfter: () -> Unit) {
+        val card = _current.value ?: return
+        val elapsed = (now - startTimeMs).coerceAtLeast(0L)
+        viewModelScope.launch {
+            val currentLoc = locationsRepo.getCurrentLocationId()
+            repo.recordReview(
+                card = card,
+                grade = grade,
+                timeToAnswerMs = elapsed,
+                currentLocationId = currentLoc
             )
             onAfter()
             loadNext()

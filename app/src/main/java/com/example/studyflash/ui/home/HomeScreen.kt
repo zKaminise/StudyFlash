@@ -1,10 +1,17 @@
 package com.example.studyflash.ui.home
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -17,6 +24,7 @@ fun HomeScreen(
     onCreate: () -> Unit = {},
     onStudy:  () -> Unit = {},
     onCards:  () -> Unit = {},
+    onLocations: () -> Unit = {},
     vm: HomeViewModel = hiltViewModel()
 ) {
     val host = remember { SnackbarHostState() }
@@ -48,6 +56,10 @@ fun HomeScreen(
 
             OutlinedButton(onClick = onCards, modifier = Modifier.fillMaxWidth()) {
                 Text("Ver Cards")
+            }
+
+            OutlinedButton(onClick = onLocations, modifier = Modifier.fillMaxWidth()) {
+                Text("Locais de Estudo")
             }
 
             Divider(Modifier.padding(vertical = 8.dp))
