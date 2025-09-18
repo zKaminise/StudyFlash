@@ -1,6 +1,6 @@
 package com.example.studyflash.data.sync
 
-import com.example.studyflash.data.local.AppDatabase
+import com.example.studyflash.data.local.FlashcardDao
 import com.example.studyflash.data.local.FlashcardEntity
 import com.example.studyflash.data.remote.KtorApi
 import com.example.studyflash.data.remote.toCreateRequest
@@ -9,32 +9,29 @@ import javax.inject.Inject
 
 class SyncManager @Inject constructor(
     private val api: KtorApi,
-    private val db: AppDatabase
+    private val dao: FlashcardDao
 ) {
-    // Acesso ao DAO via db
-    private val dao get() = db.flashcardDao()
-
-    // Baixa tudo do servidor e substitui local
-    suspend fun pullAll(): Int {
+    /** Baixa tudo do servidor e substitui local */
+    suspend fun pullAll(): Result<Int> = runCatching {
         val remote = api.getAll()
         val entities = remote.map { it.toEntity() }
         dao.clearAll()
         entities.forEach { dao.upsert(it) }
-        return entities.size
+        entities.size
     }
 
-    // Envia tudo que está local pro servidor (cria ou atualiza)
-    suspend fun pushAll(): Int {
+    /** Envia tudo o que está local pro servidor (cria ou atualiza) */
+    suspend fun pushAll(): Result<Int> = runCatching {
         val snapshot: List<FlashcardEntity> = dao.listAll()
         snapshot.forEach { card ->
             val id = if (card.id == 0L) null else card.id
             val body = card.toCreateRequest()
             if (id == null) {
-                api.create(body)      // criar
+                api.create(body)   // cria
             } else {
-                api.upsert(id, body)  // atualizar/upsert
+                api.upsert(id, body) // atualiza/upsert
             }
         }
-        return snapshot.size
+        snapshot.size
     }
 }

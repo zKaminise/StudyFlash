@@ -54,31 +54,28 @@ class HomeViewModel @Inject constructor(
         _message.value = null
         return m
     }
-
-    fun syncPull(onDone: (Int) -> Unit = {}) {
+    fun syncPull(onDone: (Int, String?) -> Unit = { _, _ -> }) {
         viewModelScope.launch {
-            try {
-                val n = sync.pullAll()
+            val res = sync.pullAll()
+            res.onSuccess { n ->
                 refreshSummary()
-                _message.value = "Baixados $n cards do servidor."
-                onDone(n)
-            } catch (e: Exception) {
-                _message.value = "Falha ao baixar: verifique se o servidor está rodando."
-                onDone(0)
+                onDone(n, null)
+            }.onFailure { e ->
+                val msg = e.localizedMessage ?: "Falha de rede. Verifique se o servidor Ktor está rodando em 10.0.2.2:8080."
+                onDone(0, msg)
             }
         }
     }
 
-    fun syncPush(onDone: (Int) -> Unit = {}) {
+    fun syncPush(onDone: (Int, String?) -> Unit = { _, _ -> }) {
         viewModelScope.launch {
-            try {
-                val n = sync.pushAll()
+            val res = sync.pushAll()
+            res.onSuccess { n ->
                 refreshSummary()
-                _message.value = "Enviados $n cards ao servidor."
-                onDone(n)
-            } catch (e: Exception) {
-                _message.value = "Falha ao enviar: verifique sua conexão/servidor."
-                onDone(0)
+                onDone(n, null)
+            }.onFailure { e ->
+                val msg = e.localizedMessage ?: "Falha de rede ao enviar. Confirme o servidor Ktor."
+                onDone(0, msg)
             }
         }
     }

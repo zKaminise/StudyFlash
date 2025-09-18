@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import kotlin.math.max
 
+private const val AVOID_SAME_LOCATION_MS: Long = 15 * 60 * 1000 // 15 min
+
 class FlashcardRepository @Inject constructor(
     private val dao: FlashcardDao,
     private val attemptDao: AttemptHistoryDao
@@ -50,11 +52,20 @@ class FlashcardRepository @Inject constructor(
         dao.delete(card)
     }
 
+    // Próximo devido SEM considerar localização (fallback)
     suspend fun getNextDue(): FlashcardEntity? =
         dao.getNextDue(System.currentTimeMillis())
 
-    suspend fun getNextDue(currentLocationId: String?): FlashcardEntity? =
-        getNextDue()
+    // Próximo devido EVITANDO mesma localização nos últimos 15min (com fallback)
+    suspend fun getNextDue(currentLocationId: String?): FlashcardEntity? {
+        val now = System.currentTimeMillis()
+        return if (currentLocationId.isNullOrBlank()) {
+            dao.getNextDue(now)
+        } else {
+            dao.getNextDueAvoidingLocation(now, currentLocationId, AVOID_SAME_LOCATION_MS)
+                ?: dao.getNextDue(now)
+        }
+    }
 
     suspend fun buildOptionsFor(card: FlashcardEntity, total: Int = 4): List<String> {
         val correct = card.backText?.takeIf { it.isNotBlank() } ?: "Sem resposta"
@@ -103,15 +114,14 @@ class FlashcardRepository @Inject constructor(
                 Quad(intervalDays, ease, reps, due)
             }
 
-        // ✅ AGORA PASSANDO TODOS OS PARÂMETROS QUE O DAO EXIGE
         dao.updateSpaced(
             id = card.id,
             ease = ease,
             intervalDays = intervalDays,
             reps = reps,
             dueAt = nextDueAt,
-            lastLocationId = currentLocationId, // <— novo
-            lastReviewedAt = now,               // <— novo
+            lastLocationId = currentLocationId,
+            lastReviewedAt = now,
             updatedAt = now
         )
 

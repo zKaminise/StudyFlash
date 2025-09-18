@@ -7,8 +7,6 @@ import com.example.studyflash.data.remote.KtorApi
 import com.example.studyflash.data.repository.FlashcardRepository
 import com.example.studyflash.data.repository.LocationsRepository
 import com.example.studyflash.data.sync.SyncManager
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.storage.FirebaseStorage
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -60,6 +58,5 @@ object AppModule {
 
     @Provides @Singleton
     fun provideSyncManager(api: KtorApi, db: AppDatabase): SyncManager =
-        SyncManager(api, db)
+        SyncManager(api, db.flashcardDao())
 }
-

@@ -62,29 +62,41 @@ fun HomeScreen(
                 Text("Locais de Estudo")
             }
 
-            Divider(Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
             OutlinedButton(
                 onClick = {
-                    vm.syncPull { n ->
+                    vm.syncPull { count, error ->
                         scope.launch {
-                            host.showSnackbar("Baixados do servidor: $n cards")
+                            if (error == null) {
+                                host.showSnackbar("Baixados do servidor: $count cards")
+                            } else {
+                                host.showSnackbar(error)
+                            }
                         }
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
-            ) { Text("Baixar do servidor") }
+            ) {
+                Text("Baixar do servidor")
+            }
 
             OutlinedButton(
                 onClick = {
-                    vm.syncPush { n ->
+                    vm.syncPush { count, error ->
                         scope.launch {
-                            host.showSnackbar("Enviados ao servidor: $n cards")
+                            if (error == null) {
+                                host.showSnackbar("Enviados ao servidor: $count cards")
+                            } else {
+                                host.showSnackbar(error)
+                            }
                         }
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
-            ) { Text("Enviar ao servidor") }
+            ) {
+                Text("Enviar ao servidor")
+            }
         }
     }
 }
