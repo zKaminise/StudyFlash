@@ -50,7 +50,7 @@ object AppModule {
     @Provides @Singleton
     fun provideRetrofit(client: OkHttpClient): Retrofit =
         Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8080/") // troque para http://SEU_IP_LOCAL:8080 ao gerar APK
+            .baseUrl("http://10.0.2.2:8080/") // ajuste para seu IP ao gerar APK
             .addConverterFactory(GsonConverterFactory.create())
             .client(client)
             .build()
@@ -71,6 +71,9 @@ object AppModule {
         LocationsRepository(db.favoriteLocationDao())
 
     @Provides @Singleton
-    fun provideSyncManager(api: KtorApi, flashcardDao: FlashcardDao): SyncManager =
-        SyncManager(api, flashcardDao)
+    fun provideSyncManager(
+        api: KtorApi,
+        flashcardDao: FlashcardDao,
+        @ApplicationContext context: Context
+    ): SyncManager = SyncManager(api, flashcardDao, context)
 }

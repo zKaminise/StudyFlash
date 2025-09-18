@@ -13,7 +13,8 @@ data class LocationStatsRow(
     val locationId: String?,   // null => "Sem local"
     val total: Int,            // COUNT(*)
     val correctCount: Int,     // SUM(correct ? 1 : 0)
-    val lastAnsweredAt: Long   // MAX(answeredAt)
+    val avgTimeMs: Long?,      // AVG(timeToAnswerMs)
+    val lastAnsweredAt: Long?  // MAX(answeredAt)
 )
 
 @Dao
@@ -25,18 +26,30 @@ interface AttemptHistoryDao {
     @Query("DELETE FROM attempt_history WHERE cardId = :cardId")
     suspend fun clearByCard(cardId: Long)
 
-    // 🔽 NOVO: estatísticas por localização
+    // Para heatmap / filtros por período (7/30/90 dias)
+    @Query(
+        """
+        SELECT * FROM attempt_history
+        WHERE answeredAt BETWEEN :from AND :to
+        ORDER BY answeredAt ASC
+        """
+    )
+    suspend fun listBetween(from: Long, to: Long): List<AttemptHistoryEntity>
+
+    // Estatísticas por localização no intervalo
     @Query(
         """
         SELECT 
             locationId AS locationId,
             COUNT(*) AS total,
             SUM(CASE WHEN correct THEN 1 ELSE 0 END) AS correctCount,
+            AVG(timeToAnswerMs) AS avgTimeMs,
             MAX(answeredAt) AS lastAnsweredAt
         FROM attempt_history
+        WHERE answeredAt BETWEEN :from AND :to
         GROUP BY locationId
-        ORDER BY lastAnsweredAt DESC
+        ORDER BY total DESC
         """
     )
-    suspend fun getStatsByLocation(): List<LocationStatsRow>
+    suspend fun getStatsByLocation(from: Long, to: Long): List<LocationStatsRow>
 }

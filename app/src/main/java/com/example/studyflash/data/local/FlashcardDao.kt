@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface FlashcardDao {
+
     @Query("SELECT * FROM flashcards ORDER BY updatedAt DESC")
     fun observeAll(): Flow<List<FlashcardEntity>>
 
@@ -17,6 +18,9 @@ interface FlashcardDao {
 
     @Query("SELECT * FROM flashcards WHERE id = :id")
     suspend fun getById(id: Long): FlashcardEntity?
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insert(entity: FlashcardEntity): Long
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: FlashcardEntity): Long
@@ -29,7 +33,8 @@ interface FlashcardDao {
     suspend fun getNextDue(now: Long): FlashcardEntity?
 
     // Evita repetição por localização (exclui cartões revistos recentemente no mesmo local)
-    @Query("""
+    @Query(
+        """
         SELECT * FROM flashcards
         WHERE dueAt <= :now
           AND NOT (
@@ -40,7 +45,8 @@ interface FlashcardDao {
           )
         ORDER BY dueAt ASC
         LIMIT 1
-    """)
+        """
+    )
     suspend fun getNextDueAvoidingLocation(
         now: Long,
         locationId: String?,
@@ -48,11 +54,13 @@ interface FlashcardDao {
     ): FlashcardEntity?
 
     // Distratores para MCQ
-    @Query("""
+    @Query(
+        """
         SELECT backText FROM flashcards
         WHERE id != :id AND backText IS NOT NULL AND TRIM(backText) != ''
         ORDER BY RANDOM() LIMIT :n
-    """)
+        """
+    )
     suspend fun getRandomBacks(id: Long, n: Int): List<String>
 
     @Query("SELECT COUNT(*) FROM flashcards")
@@ -64,17 +72,19 @@ interface FlashcardDao {
     @Query("DELETE FROM flashcards")
     suspend fun clearAll()
 
-    @Query("""
+    @Query(
+        """
         UPDATE flashcards
-        SET easeFactor    = :ease,
-            intervalDays  = :intervalDays,
-            repetitions   = :reps,
-            dueAt         = :dueAt,
+        SET easeFactor     = :ease,
+            intervalDays   = :intervalDays,
+            repetitions    = :reps,
+            dueAt          = :dueAt,
             lastLocationId = :lastLocationId,
             lastReviewedAt = :lastReviewedAt,
-            updatedAt     = :updatedAt
+            updatedAt      = :updatedAt
         WHERE id = :id
-    """)
+        """
+    )
     suspend fun updateSpaced(
         id: Long,
         ease: Double,
@@ -85,4 +95,8 @@ interface FlashcardDao {
         lastReviewedAt: Long?,
         updatedAt: Long = System.currentTimeMillis()
     )
+
+    /** Suporte ao push seletivo (updatedAt > since) */
+    @Query("SELECT * FROM flashcards WHERE updatedAt > :since")
+    suspend fun listUpdatedSince(since: Long): List<FlashcardEntity>
 }

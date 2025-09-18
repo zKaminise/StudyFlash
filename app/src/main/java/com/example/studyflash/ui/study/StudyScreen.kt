@@ -2,7 +2,17 @@ package com.example.studyflash.ui.study
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
@@ -89,41 +99,45 @@ fun StudyScreen(
             return@Column
         }
 
-        when (card!!.type) {
-            "mcq" -> McqSection(
-                question = card!!.frontText.orEmpty(),
-                correct = card!!.backText.orEmpty(),
+        val c = card!!
+
+        // --- BLOCO DA PERGUNTA/RESPOSTA (com flip no MCQ) ---
+        if (c.type == "mcq") {
+            McqSection(
+                question = c.frontText.orEmpty(),
+                correct = c.backText.orEmpty(),
                 options = options,
                 selectedIndex = selectedIndex,
-                isCorrect = isCorrect
-            ) {
-                vm.choose(it)
-                flipped = true
-            }
-
-            "front_back" -> FrontBackSection(
-                front = card!!.frontText.orEmpty(),
-                back  = card!!.backText.orEmpty(),
+                isCorrect = isCorrect,
+                onChoose = { idx ->
+                    vm.choose(idx)
+                    flipped = true
+                }
+            )
+        } else if (c.type == "front_back") {
+            FrontBackSection(
+                front = c.frontText.orEmpty(),
+                back  = c.backText.orEmpty(),
                 onGrade = { grade -> vm.commitGrade(grade) {} }
             )
-
-            "free_text" -> FreeTextSection(
-                question = card!!.frontText.orEmpty(),
-                answers = splitAnswers(card!!.backText),
+        } else if (c.type == "free_text") {
+            FreeTextSection(
+                question = c.frontText.orEmpty(),
+                answers = splitAnswers(c.backText),
                 onGrade = { grade -> vm.commitGrade(grade) {} }
             )
-
-            "cloze" -> ClozeSection(
-                text = card!!.frontText.orEmpty(),
-                answers = splitAnswers(card!!.backText),
+        } else if (c.type == "cloze") {
+            ClozeSection(
+                text = c.frontText.orEmpty(),
+                answers = splitAnswers(c.backText),
                 onGrade = { grade -> vm.commitGrade(grade) {} }
             )
-
-            else -> Text("Tipo desconhecido: ${card!!.type}")
+        } else {
+            Text("Tipo desconhecido: ${c.type}")
         }
 
         // Para MCQ, após escolher, mostramos "Próximo"
-        if (card!!.type == "mcq" && selectedIndex != null) {
+        if (c.type == "mcq" && selectedIndex != null) {
             Button(
                 onClick = { vm.commitAnswer { flipped = false } },
                 modifier = Modifier.fillMaxWidth()
@@ -150,6 +164,7 @@ private fun McqSection(
     val rotation by animateFloatAsState(if (flipped) 180f else 0f, label = "flip")
     val density = LocalDensity.current.density
 
+    // Pergunta / resposta (cartão com flip)
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -164,13 +179,19 @@ private fun McqSection(
         if (rotation <= 90f) {
             Text(question, textAlign = TextAlign.Center, modifier = Modifier.padding(12.dp))
         } else {
-            Box(modifier = Modifier.graphicsLayer { rotationY = 180f }, contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier.graphicsLayer { rotationY = 180f },
+                contentAlignment = Alignment.Center
+            ) {
                 Text(correct, textAlign = TextAlign.Center, modifier = Modifier.padding(12.dp))
             }
         }
     }
 
-    Text("Escolha a resposta correta:")
+    Spacer(Modifier.height(8.dp))
+    Text("Escolha a resposta correta:", style = MaterialTheme.typography.labelLarge)
+
+    // Alternativas
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         options.forEachIndexed { index, opt ->
             val chosen = selectedIndex == index
@@ -190,7 +211,7 @@ private fun McqSection(
                 colors = ButtonDefaults.buttonColors(containerColor = bg, contentColor = fg),
                 enabled = selectedIndex == null,
                 modifier = Modifier.fillMaxWidth()
-            ) { Text(opt) }
+            ) { Text(opt, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) }
         }
     }
 }
@@ -211,7 +232,9 @@ private fun FrontBackSection(
     )
 
     if (!revealed) {
-        Button(onClick = { revealed = true }, modifier = Modifier.fillMaxWidth()) { Text("Mostrar resposta") }
+        Button(onClick = { revealed = true }, modifier = Modifier.fillMaxWidth()) {
+            Text("Mostrar resposta")
+        }
     } else {
         Text(back, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         GradeRow(onGrade)

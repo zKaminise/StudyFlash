@@ -22,7 +22,6 @@ class HomeViewModel @Inject constructor(
     private val sync: SyncManager
 ) : ViewModel() {
 
-    // Mensagem para Snackbar/Toast na UI
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message
 
@@ -32,6 +31,9 @@ class HomeViewModel @Inject constructor(
 
     private val _summary = MutableStateFlow(HomeSummary())
     val summary: StateFlow<HomeSummary> = _summary
+
+    private val _isSyncing = MutableStateFlow(false)
+    val isSyncing: StateFlow<Boolean> = _isSyncing
 
     fun add(type: String, front: String?, back: String?) {
         viewModelScope.launch { repo.add(type, front, back) }
@@ -49,35 +51,40 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun consumeMessage(): String? { // chame na UI após exibir
+    fun consumeMessage(): String? {
         val m = _message.value
         _message.value = null
         return m
     }
+
     fun syncPull(onDone: (Int, String?) -> Unit = { _, _ -> }) {
         viewModelScope.launch {
+            _isSyncing.value = true
             val res = sync.pullAll()
+            _isSyncing.value = false
             res.onSuccess { n ->
                 refreshSummary()
                 onDone(n, null)
             }.onFailure { e ->
-                val msg = e.localizedMessage ?: "Falha de rede. Verifique se o servidor Ktor está rodando em 10.0.2.2:8080."
+                val msg = e.localizedMessage ?: "Falha de rede. Verifique o servidor."
                 onDone(0, msg)
             }
         }
     }
 
+    /** Push seletivo: só envia updatedAt > lastSyncAt */
     fun syncPush(onDone: (Int, String?) -> Unit = { _, _ -> }) {
         viewModelScope.launch {
-            val res = sync.pushAll()
+            _isSyncing.value = true
+            val res = sync.pushSinceLastSync()
+            _isSyncing.value = false
             res.onSuccess { n ->
                 refreshSummary()
                 onDone(n, null)
             }.onFailure { e ->
-                val msg = e.localizedMessage ?: "Falha de rede ao enviar. Confirme o servidor Ktor."
+                val msg = e.localizedMessage ?: "Falha de rede ao enviar."
                 onDone(0, msg)
             }
         }
     }
 }
-
