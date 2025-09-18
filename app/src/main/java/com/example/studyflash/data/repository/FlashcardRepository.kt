@@ -9,7 +9,13 @@ import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import kotlin.math.max
 
-private const val AVOID_SAME_LOCATION_MS: Long = 15 * 60 * 1000 // 15 min
+private const val AVOID_SAME_LOCATION_MS: Long = 15 * 60 * 1000
+
+private const val DUE_CORRECT_MS: Long = 4 * 60 * 1000
+private const val DUE_WRONG_MS:   Long = 1 * 60 * 1000
+
+//rivate const val DUE_CORRECT_MS: Long = 24 * 60 * 60 * 1000    // 24 horas
+//private const val DUE_WRONG_MS:   Long =  5 * 60 * 1000         // 5 minutos
 
 class FlashcardRepository @Inject constructor(
     private val dao: FlashcardDao,
@@ -28,21 +34,21 @@ class FlashcardRepository @Inject constructor(
     ) {
         val now = System.currentTimeMillis()
         val entity = FlashcardEntity(
-            /* id             = */ 0L,
-            /* type           = */ type,
-            /* frontText      = */ front,
-            /* backText       = */ back,
-            /* wrong1         = */ wrong1,
-            /* wrong2         = */ wrong2,
-            /* wrong3         = */ wrong3,
-            /* createdAt      = */ now,
-            /* updatedAt      = */ now,
-            /* dueAt          = */ now,
-            /* easeFactor     = */ 2.5,
-            /* intervalDays   = */ 0,
-            /* repetitions    = */ 0,
-            /* lastLocationId = */ null,
-            /* lastReviewedAt = */ null
+            id = 0L,
+            type = type,
+            frontText = front,
+            backText = back,
+            wrong1 = wrong1,
+            wrong2 = wrong2,
+            wrong3 = wrong3,
+            createdAt = now,
+            updatedAt = now,
+            dueAt = now,
+            easeFactor = 2.5,
+            intervalDays = 0,
+            repetitions = 0,
+            lastLocationId = null,
+            lastReviewedAt = null
         )
         dao.upsert(entity)
     }
@@ -104,13 +110,13 @@ class FlashcardRepository @Inject constructor(
                 val reps = card.repetitions + 1
                 val ease = card.easeFactor
                 val intervalDays = 1
-                val due = now + 24L * 60 * 60 * 1000
+                val due = now + DUE_CORRECT_MS // ✅ 4 minutos
                 Quad(intervalDays, ease, reps, due)
             } else {
                 val reps = 0
                 val ease = card.easeFactor
                 val intervalDays = 0
-                val due = now + 2L * 60 * 1000
+                val due = now + DUE_WRONG_MS   // ✅ 1 minuto
                 Quad(intervalDays, ease, reps, due)
             }
 
