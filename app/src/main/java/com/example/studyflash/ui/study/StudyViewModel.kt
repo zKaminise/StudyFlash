@@ -9,6 +9,7 @@ import com.example.studyflash.domain.spaced.StudyGrade
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
@@ -19,33 +20,55 @@ class StudyViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _current = MutableStateFlow<FlashcardEntity?>(null)
-    val current = _current.asStateFlow()
+    val current: StateFlow<FlashcardEntity?> = _current.asStateFlow()
 
     private val _options = MutableStateFlow<List<String>>(emptyList())
-    val options = _options.asStateFlow()
+    val options: StateFlow<List<String>> = _options.asStateFlow()
 
     private val _selectedIndex = MutableStateFlow<Int?>(null)
-    val selectedIndex = _selectedIndex.asStateFlow()
+    val selectedIndex: StateFlow<Int?> = _selectedIndex.asStateFlow()
 
     private val _isCorrect = MutableStateFlow<Boolean?>(null)
-    val isCorrect = _isCorrect.asStateFlow()
+    val isCorrect: StateFlow<Boolean?> = _isCorrect.asStateFlow()
 
     val manualResult = MutableStateFlow<Boolean?>(null)
+
+    // --- Progresso da sessão ---
+    private val _sessionTotal = MutableStateFlow(0)    // total devido no momento de iniciar
+    val sessionTotal: StateFlow<Int> = _sessionTotal.asStateFlow()
+
+    private val _answeredCount = MutableStateFlow(0)   // quantos já foram confirmados nesta sessão
+    val answeredCount: StateFlow<Int> = _answeredCount.asStateFlow()
+
+    private var sessionStarted = false
 
     private var startTimeMs: Long = 0L
     private val now: Long get() = System.currentTimeMillis()
 
-    fun loadNext() {
+    fun startOrContinue() {
         viewModelScope.launch {
-            val currentLoc = locationsRepo.getCurrentLocationId()
-            val card = repo.getNextDue(currentLoc)
-            _current.value = card
-            _selectedIndex.value = null
-            _isCorrect.value = null
-            manualResult.value = null
-            _options.value = if (card != null && card.type == "mcq") repo.buildOptionsFor(card) else emptyList()
-            startTimeMs = now
+            if (!sessionStarted) {
+                sessionStarted = true
+                _answeredCount.value = 0
+                _sessionTotal.value = repo.countDue() // total no início da sessão
+            }
+            loadNextInternal()
         }
+    }
+
+    fun reloadNext() {
+        viewModelScope.launch { loadNextInternal() }
+    }
+
+    private suspend fun loadNextInternal() {
+        val currentLoc = locationsRepo.getCurrentLocationId()
+        val card = repo.getNextDue(currentLoc)
+        _current.value = card
+        _selectedIndex.value = null
+        _isCorrect.value = null
+        manualResult.value = null
+        _options.value = if (card != null && card.type == "mcq") repo.buildOptionsFor(card) else emptyList()
+        startTimeMs = now
     }
 
     fun choose(index: Int) {
@@ -57,7 +80,7 @@ class StudyViewModel @Inject constructor(
         _isCorrect.value = (opts[index] == correct)
     }
 
-    fun commitAnswer(onAfter: () -> Unit) {
+    fun commitAnswer(onAfter: () -> Unit = {}) {
         val card = _current.value ?: return
         val elapsed = (now - startTimeMs).coerceAtLeast(0L)
         viewModelScope.launch {
@@ -69,13 +92,13 @@ class StudyViewModel @Inject constructor(
                 timeToAnswerMs = elapsed,
                 currentLocationId = currentLoc
             )
+            _answeredCount.value = (_answeredCount.value + 1).coerceAtLeast(0)
             onAfter()
-            loadNext()
+            loadNextInternal()
         }
     }
 
-    // ⬇️ Para tipos manuais: commit com nota explícita
-    fun commitGrade(grade: StudyGrade, onAfter: () -> Unit) {
+    fun commitGrade(grade: StudyGrade, onAfter: () -> Unit = {}) {
         val card = _current.value ?: return
         val elapsed = (now - startTimeMs).coerceAtLeast(0L)
         viewModelScope.launch {
@@ -86,8 +109,9 @@ class StudyViewModel @Inject constructor(
                 timeToAnswerMs = elapsed,
                 currentLocationId = currentLoc
             )
+            _answeredCount.value = (_answeredCount.value + 1).coerceAtLeast(0)
             onAfter()
-            loadNext()
+            loadNextInternal()
         }
     }
 }

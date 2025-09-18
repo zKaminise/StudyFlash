@@ -43,9 +43,9 @@ fun StudyScreen(
 ) {
     var flipped by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) { vm.loadNext() }
+    // ✅ agora é startOrContinue() (inicia a sessão e calcula X de Y)
+    LaunchedEffect(Unit) { vm.startOrContinue() }
 
-    // ✅ coletores corretos p/ StateFlow
     val card by vm.current.collectAsStateWithLifecycle()
     val options by vm.options.collectAsStateWithLifecycle()
     val selectedIndex by vm.selectedIndex.collectAsStateWithLifecycle()
@@ -61,6 +61,9 @@ fun StudyScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Cabeçalho de progresso "X de Y" + barra
+        StudyProgress(vm = vm)
+
         if (card == null) {
             Text("Nenhum cartão devido agora. Volte mais tarde ou crie mais cartões.")
             Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
@@ -123,7 +126,7 @@ private fun McqSection(
     isCorrect: Boolean?,
     onChoose: (Int) -> Unit
 ) {
-    // Cartão com flip visual quando responde (mantemos o mesmo visual)
+    // Flip visual quando responde
     var flipped by remember { mutableStateOf(false) }
     LaunchedEffect(selectedIndex) { flipped = selectedIndex != null }
 

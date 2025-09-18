@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import com.example.studyflash.location.EnsureLocationPermissions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
@@ -52,9 +53,11 @@ fun LocationsScreen(
     padding: PaddingValues,
     onEdit: (String) -> Unit,
     vm: LocationsViewModel = hiltViewModel()
+
 ) {
     val locations by vm.items.collectAsStateWithLifecycle()
     val currentId by vm.currentId.collectAsStateWithLifecycle()
+    EnsureLocationPermissions(askBackground = true)
 
     val host = remember { SnackbarHostState() }
     val ctx = LocalContext.current

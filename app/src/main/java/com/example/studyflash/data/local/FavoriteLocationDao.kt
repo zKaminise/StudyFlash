@@ -46,4 +46,8 @@ interface FavoriteLocationDao {
 
     @Query("UPDATE favorite_locations SET radiusMeters = :radius WHERE id = :id")
     suspend fun updateRadius(id: String, radius: Float)
+
+    @Query("SELECT * FROM favorite_locations")
+    suspend fun listAll(): List<FavoriteLocationEntity>
+
 }

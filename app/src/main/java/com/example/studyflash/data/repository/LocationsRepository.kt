@@ -49,4 +49,7 @@ class LocationsRepository @Inject constructor(
     suspend fun updateRadius(id: String, radius: Float) {
         dao.updateRadius(id, radius)
     }
+
+    suspend fun listAll(): List<FavoriteLocationEntity> = dao.listAll()
+
 }
