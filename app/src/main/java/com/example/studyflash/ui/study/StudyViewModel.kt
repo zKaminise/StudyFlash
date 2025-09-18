@@ -34,10 +34,10 @@ class StudyViewModel @Inject constructor(
     val manualResult = MutableStateFlow<Boolean?>(null)
 
     // --- Progresso da sessão ---
-    private val _sessionTotal = MutableStateFlow(0)    // total devido no momento de iniciar
+    private val _sessionTotal = MutableStateFlow(0)
     val sessionTotal: StateFlow<Int> = _sessionTotal.asStateFlow()
 
-    private val _answeredCount = MutableStateFlow(0)   // quantos já foram confirmados nesta sessão
+    private val _answeredCount = MutableStateFlow(0)
     val answeredCount: StateFlow<Int> = _answeredCount.asStateFlow()
 
     private var sessionStarted = false
@@ -50,7 +50,7 @@ class StudyViewModel @Inject constructor(
             if (!sessionStarted) {
                 sessionStarted = true
                 _answeredCount.value = 0
-                _sessionTotal.value = repo.countDue() // total no início da sessão
+                _sessionTotal.value = repo.countDue() // total due no início da sessão
             }
             loadNextInternal()
         }

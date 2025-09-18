@@ -3,6 +3,8 @@ package com.example.studyflash.di
 import android.content.Context
 import androidx.room.Room
 import com.example.studyflash.data.local.AppDatabase
+import com.example.studyflash.data.local.AttemptHistoryDao
+import com.example.studyflash.data.local.FlashcardDao
 import com.example.studyflash.data.remote.KtorApi
 import com.example.studyflash.data.repository.FlashcardRepository
 import com.example.studyflash.data.repository.LocationsRepository
@@ -22,12 +24,21 @@ import retrofit2.converter.gson.GsonConverterFactory
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
+    // --- DB ---
     @Provides @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, "studyflash.db")
             .fallbackToDestructiveMigration()
             .build()
 
+    // --- DAOs ---
+    @Provides @Singleton
+    fun provideFlashcardDao(db: AppDatabase): FlashcardDao = db.flashcardDao()
+
+    @Provides @Singleton
+    fun provideAttemptHistoryDao(db: AppDatabase): AttemptHistoryDao = db.attemptHistoryDao()
+
+    // --- OkHttp / Retrofit ---
     @Provides @Singleton
     fun provideOkHttpClient(): OkHttpClient =
         OkHttpClient.Builder()
@@ -39,7 +50,7 @@ object AppModule {
     @Provides @Singleton
     fun provideRetrofit(client: OkHttpClient): Retrofit =
         Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8080/")
+            .baseUrl("http://10.0.2.2:8080/") // troque para http://SEU_IP_LOCAL:8080 ao gerar APK
             .addConverterFactory(GsonConverterFactory.create())
             .client(client)
             .build()
@@ -48,15 +59,18 @@ object AppModule {
     fun provideKtorApi(retrofit: Retrofit): KtorApi =
         retrofit.create(KtorApi::class.java)
 
+    // --- Repositórios / Sync ---
     @Provides @Singleton
-    fun provideFlashcardRepository(db: AppDatabase): FlashcardRepository =
-        FlashcardRepository(db.flashcardDao(), db.attemptHistoryDao())
+    fun provideFlashcardRepository(
+        flashcardDao: FlashcardDao,
+        attemptHistoryDao: AttemptHistoryDao
+    ): FlashcardRepository = FlashcardRepository(flashcardDao, attemptHistoryDao)
 
     @Provides @Singleton
     fun provideLocationsRepository(db: AppDatabase): LocationsRepository =
         LocationsRepository(db.favoriteLocationDao())
 
     @Provides @Singleton
-    fun provideSyncManager(api: KtorApi, db: AppDatabase): SyncManager =
-        SyncManager(api, db.flashcardDao())
+    fun provideSyncManager(api: KtorApi, flashcardDao: FlashcardDao): SyncManager =
+        SyncManager(api, flashcardDao)
 }

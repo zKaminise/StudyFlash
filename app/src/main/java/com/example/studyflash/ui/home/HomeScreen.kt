@@ -55,6 +55,7 @@ fun HomeScreen(
     onStudy:  () -> Unit = {},
     onCards:  () -> Unit = {},
     onLocations: () -> Unit = {},
+    onAnalytics: () -> Unit = {},
     vm: HomeViewModel = hiltViewModel()
 ) {
     val host = remember { SnackbarHostState() }
@@ -63,9 +64,7 @@ fun HomeScreen(
     val summary by vm.summary.collectAsStateWithLifecycle()
     var menuOpen by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        vm.refreshSummary()
-    }
+    LaunchedEffect(Unit) { vm.refreshSummary() }
 
     Scaffold(
         modifier = Modifier.padding(padding),
@@ -88,11 +87,9 @@ fun HomeScreen(
                                     menuOpen = false
                                     vm.syncPull { count, error ->
                                         scope.launch {
-                                            if (error == null) {
-                                                host.showSnackbar("Baixados do servidor: $count cards")
-                                            } else {
-                                                host.showSnackbar(error)
-                                            }
+                                            host.showSnackbar(
+                                                error ?: "Baixados do servidor: $count cards"
+                                            )
                                         }
                                     }
                                 }
@@ -104,11 +101,9 @@ fun HomeScreen(
                                     menuOpen = false
                                     vm.syncPush { count, error ->
                                         scope.launch {
-                                            if (error == null) {
-                                                host.showSnackbar("Enviados ao servidor: $count cards")
-                                            } else {
-                                                host.showSnackbar(error)
-                                            }
+                                            host.showSnackbar(
+                                                error ?: "Enviados ao servidor: $count cards"
+                                            )
                                         }
                                     }
                                 }
@@ -143,9 +138,7 @@ fun HomeScreen(
                 AssistChip(
                     onClick = onLocations,
                     label = { Text("Trocar local de estudo") },
-                    leadingIcon = {
-                        Icon(Icons.Filled.Place, contentDescription = null)
-                    }
+                    leadingIcon = { Icon(Icons.Filled.Place, contentDescription = null) }
                 )
             }
 
@@ -159,6 +152,10 @@ fun HomeScreen(
             }
             Button(onClick = onLocations, modifier = Modifier.fillMaxWidth()) {
                 Text("Locais de Estudo")
+            }
+            // ✅ apenas um botão para a mesma tela
+            Button(onClick = onAnalytics, modifier = Modifier.fillMaxWidth()) {
+                Text("Analytics (por local)")
             }
         }
     }

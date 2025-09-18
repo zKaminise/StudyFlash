@@ -2,18 +2,10 @@ package com.example.studyflash.ui.study
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -34,6 +26,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.studyflash.domain.spaced.StudyGrade
 import java.text.Normalizer
+import kotlin.math.max
+import kotlin.math.min
 
 @Composable
 fun StudyScreen(
@@ -43,13 +37,22 @@ fun StudyScreen(
 ) {
     var flipped by remember { mutableStateOf(false) }
 
-    // ✅ agora é startOrContinue() (inicia a sessão e calcula X de Y)
+    // Inicia/continua sessão (x de y)
     LaunchedEffect(Unit) { vm.startOrContinue() }
 
     val card by vm.current.collectAsStateWithLifecycle()
     val options by vm.options.collectAsStateWithLifecycle()
     val selectedIndex by vm.selectedIndex.collectAsStateWithLifecycle()
     val isCorrect by vm.isCorrect.collectAsStateWithLifecycle()
+
+    // progresso
+    val total by vm.sessionTotal.collectAsStateWithLifecycle()
+    val done by vm.answeredCount.collectAsStateWithLifecycle()
+    val shownIndex = if (card == null) done else min(done + 1, max(total, 1))
+    val progress = animateFloatAsState(
+        targetValue = if (total <= 0) 0f else (done.toFloat() / total.toFloat()),
+        label = "progress"
+    )
 
     // reset quando muda o cartão
     LaunchedEffect(card?.id) { flipped = false }
@@ -61,8 +64,22 @@ fun StudyScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Cabeçalho de progresso "X de Y" + barra
-        StudyProgress(vm = vm)
+        // Cabeçalho X de Y + barra
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = if (total > 0) "$shownIndex/$total" else "Estudo",
+                style = MaterialTheme.typography.titleMedium
+            )
+            Spacer(Modifier.width(12.dp))
+            LinearProgressIndicator(
+                progress = { progress.value },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(8.dp),
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
 
         if (card == null) {
             Text("Nenhum cartão devido agora. Volte mais tarde ou crie mais cartões.")
@@ -248,8 +265,7 @@ private fun ClozeSection(
     var input by remember { mutableStateOf("") }
     var checked by remember { mutableStateOf(false) }
     val ok = remember(input, answers, checked) {
-        if (!checked) false
-        else compareSets(splitAnswers(input), answers)
+        if (!checked) false else compareSets(splitAnswers(input), answers)
     }
 
     Text(

@@ -5,31 +5,38 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 
+/**
+ * Linha de resultado para estatísticas agrupadas por localização.
+ * locationId pode ser null (sem local definido).
+ */
+data class LocationStatsRow(
+    val locationId: String?,   // null => "Sem local"
+    val total: Int,            // COUNT(*)
+    val correctCount: Int,     // SUM(correct ? 1 : 0)
+    val lastAnsweredAt: Long   // MAX(answeredAt)
+)
+
 @Dao
 interface AttemptHistoryDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(entity: AttemptHistoryEntity): Long
-
-    @Query("SELECT * FROM attempt_history WHERE cardId = :cardId ORDER BY answeredAt DESC")
-    suspend fun listByCard(cardId: Long): List<AttemptHistoryEntity>
-
-    @Query("SELECT * FROM attempt_history ORDER BY answeredAt DESC")
-    suspend fun listAll(): List<AttemptHistoryEntity> // ⬅️ novo (para Analytics)
-
-    @Query("SELECT locationId FROM attempt_history WHERE cardId = :cardId ORDER BY answeredAt DESC LIMIT 1")
-    suspend fun lastLocation(cardId: Long): String?
-
-    @Query("""
-        SELECT answeredAt FROM attempt_history
-        WHERE cardId = :cardId AND locationId = :locationId
-        ORDER BY answeredAt DESC LIMIT 1
-    """)
-    suspend fun lastAnsweredAtAtLocation(cardId: Long, locationId: String): Long?
+    suspend fun insert(entity: AttemptHistoryEntity)
 
     @Query("DELETE FROM attempt_history WHERE cardId = :cardId")
     suspend fun clearByCard(cardId: Long)
 
-    @Query("DELETE FROM attempt_history")
-    suspend fun clearAll()
+    // 🔽 NOVO: estatísticas por localização
+    @Query(
+        """
+        SELECT 
+            locationId AS locationId,
+            COUNT(*) AS total,
+            SUM(CASE WHEN correct THEN 1 ELSE 0 END) AS correctCount,
+            MAX(answeredAt) AS lastAnsweredAt
+        FROM attempt_history
+        GROUP BY locationId
+        ORDER BY lastAnsweredAt DESC
+        """
+    )
+    suspend fun getStatsByLocation(): List<LocationStatsRow>
 }
